@@ -11,8 +11,8 @@ export class AppController {
     private readonly crawlerService: CrawlerService,
     private readonly updaterService: UpdaterService
   ) {
-    this.startStream();
-    this.updaterService.init();
+    // this.startStream();
+    // this.updaterService.init();
   }
 
   @Get()
@@ -23,6 +23,11 @@ export class AppController {
   @MessagePattern('hello')
   getHello(): string {
     return this.appService.getHello();
+  }
+
+  @Get("updateAllTokens")
+  updateAllTokens() {
+    return this.appService.updateAllTokens();
   }
 
   startStream() {

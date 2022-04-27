@@ -14,16 +14,29 @@ export class DbService {
     return 'Hello World!';
   }
 
-  async getAllTweets(limit: number): Promise<ResponseSchema<Tweet[]>> {
-    const response = await this.knex.table('tweets')
-      .orderBy('created_at', 'desc')
-      .limit(limit)
-      .then(result => {
-        return { ok: { data: result } }
-      })
-      .catch(err => {
-        return { err: { message: err } }
-      })
+  async getAllTweets(limit?: number): Promise<ResponseSchema<Tweet[]>> {
+    let response: ResponseSchema<Tweet[]>;
+    if (limit != undefined) {
+      response = await this.knex.table('tweets')
+        .orderBy('created_at', 'desc')
+        .limit(limit)
+        .then(result => {
+          return { ok: { data: result } }
+        })
+        .catch(err => {
+          return { err: { message: err } }
+        })
+    }
+    else {
+      response = await this.knex.table('tweets')
+        .orderBy('created_at', 'desc')
+        .then(result => {
+          return { ok: { data: result } }
+        })
+        .catch(err => {
+          return { err: { message: err } }
+        })
+    }
     return response;
   }
 

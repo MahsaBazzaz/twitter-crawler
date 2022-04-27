@@ -8,7 +8,6 @@ export class NlpService {
     private readonly tokenizer;
     constructor() {
         this.tokenizer = new natural.AggressiveTokenizer();
-        // natural.PorterStemmer.attach();
     }
 
     getHello(): string {
@@ -21,8 +20,7 @@ export class NlpService {
             if (!t.includes("@") && !t.includes("https:") && !t.includes("www.") && !t.includes("http:"))
                 newString.push(t)
         }
-        const output = removeStopwords(newString, eng);
-        return output;
+        return newString;
     }
 
     private async tokenize(text: string): Promise<string[]> {
@@ -39,7 +37,8 @@ export class NlpService {
     async getTokens(text: string): Promise<string[]> {
         let cleanedText = await this.clean(text.toLowerCase().split(' '));
         let tokens = await this.tokenize(cleanedText.join(' '));
-        return tokens;
+        const output = removeStopwords(tokens, eng);
+        return output;
     }
 
     
