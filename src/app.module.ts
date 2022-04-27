@@ -6,6 +6,11 @@ import { ConfigModule } from '@nestjs/config';
 import 'dotenv/config';
 import { TwitterService } from './twitter.service';
 import { DbService } from './db.service';
+import { CrawlerService } from './crawler.service';
+import { UpdaterService } from './update.service';
+import { NlpService } from './nlp.service';
+import { HttpModule } from '@nestjs/axios';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -29,8 +34,10 @@ import { DbService } from './db.service';
     ConfigModule.forRoot({
       envFilePath: '../.env',
       isGlobal: true
-    }),],
+    }),
+    HttpModule,
+    ScheduleModule.forRoot()],
   controllers: [AppController],
-  providers: [AppService, TwitterService, DbService],
+  providers: [AppService, TwitterService, DbService, CrawlerService, UpdaterService, NlpService],
 })
 export class AppModule { }

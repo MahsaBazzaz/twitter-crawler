@@ -2,16 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Transport } from '@nestjs/microservices';
 
-
-const microserviceOptions = {
-  transport: Transport.NATS,
-  options: {
-    url: 'nats://localhost:4222',
-  }
-};
-
 async function bootstrap() {
-  const app = await NestFactory.createMicroservice(AppModule, microserviceOptions);
-  app.listen();
+  //we have a hybrid app here!
+  const app = await NestFactory.create(AppModule);
+  const microservice = app.connectMicroservice({
+    transport: Transport.NATS,
+  });
+  // app.enableCors();
+  let port = 3030;
+  await app.listen(port);
 }
 bootstrap();
+
+
