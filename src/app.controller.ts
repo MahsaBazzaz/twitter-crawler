@@ -27,23 +27,29 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Get("getTokens")
-  getTokens(@Body('text') text :string ) {
-    return this.nlpService.getTokens(text);
-  }
+  // @Get("getTokens")
+  // getTokens(@Body('text') text :string ) {
+  //   return this.nlpService.getTokens(text);
+  // }
 
-  @Get("updateAllTokens")
-  updateAllTokens() {
-    return this.appService.updateAllTokens();
-  }
+  // @Get("updateAllTokens")
+  // updateAllTokens() {
+  //   return this.appService.updateAllTokens();
+  // }
 
+  @Get("start")
   startStream() {
     this.crawlerService.startStream();
   }
 
+  @Get("stop")
   stopStream() {
     this.crawlerService.stopStream();
   }
 
+  @Get("restartStream")
+  restartStream() {
+    this.crawlerService.restartSream();
+  }
 
 }

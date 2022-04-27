@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
 import { InjectModel } from 'nest-knexjs';
 import 'dotenv/config';
-import { TweetStream, TweetV1, TweetV2SingleStreamResult, TwitterApi, TwitterApiReadOnly } from 'twitter-api-v2';
+import { ETwitterStreamEvent, TweetStream, TweetV1, TweetV2SingleStreamResult, TwitterApi, TwitterApiReadOnly } from 'twitter-api-v2';
 import { ResponseSchema } from 'dtos';
 import { DbService } from './db.service';
 import { TwitterService } from './twitter.service';
@@ -46,19 +46,40 @@ export class CrawlerService {
             this.streamFilter = await this.roClient.v1.filterStream({
                 follow: users.ok.data, tweet_mode: 'extended', format: 'detailed'
             });
-
         }
 
-        // You can also use async iterator to iterate over tweets!
-        for await (const data of this.streamFilter) {
-            console.log("data received");
-            this.processTweet(data);
-        }
+        this.streamFilter.on(
+            // Emitted when Node.js {response} is closed by remote or using .close().
+            ETwitterStreamEvent.ConnectionClosed,
+            () => console.log('Connection has been closed.'),
+        );
+
+        this.streamFilter.on(
+            // Emitted when a Twitter payload (a tweet or not, given the endpoint).
+            ETwitterStreamEvent.Data,
+            eventData => {
+                console.log('Twitter has sent something:', eventData);
+                this.processTweet(eventData);
+            },
+
+        );
+
+        this.streamFilter.on(
+            // Emitted when a Twitter sent a signal to maintain connection active
+            ETwitterStreamEvent.DataKeepAlive,
+            () => console.log('Twitter has a keep-alive packet.'),
+        );
+
     }
 
     async stopStream() {
         // Be sure to close the stream where you don't want to consume data anymore from it
         this.streamFilter.close();
+    }
+
+    async restartSream() {
+        this.stopStream();
+        this.startStream();
     }
 
     async processTweet(tweet: any) {
