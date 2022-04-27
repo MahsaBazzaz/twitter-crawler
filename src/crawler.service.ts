@@ -90,47 +90,43 @@ export class CrawlerService {
         console.log(text);
         let result = await this.dbService.getTweet(id);
         if (result.ok) {
-            // if (result.ok.data.length <= 0) {
-            //     let tokens: string[] = await this.nlpService.getTokens(text);
-            //     let stems: string[] = [];
-            //     for (const element of tokens) {
-            //         stems.push(await this.nlpService.stem(element));
-            //     }
-            //     const keywords = await this.dbService.getAllKeywords();
-            //     const tokensIntersectionWithEnStopwords = tokens.filter(value => keywords.ok.data.includes(value));
-            //     const stemsIntersectionWithEnStopwords = stems.filter(value => keywords.ok.data.includes(value));
-            //     if (tokensIntersectionWithEnStopwords.length > 0 || stemsIntersectionWithEnStopwords.length > 0) {
-            //         this.updateService.addToQueue(id);
-            //         await this.dbService.addTweet({ id: id, text: text, user_id: user_id, username: username, created_at: created_at, likes: likes, retweeted: retweets, query: tweet });
-            //         await this.dbService.updateTokenTable(tokens, text);
-            //         let existingUser = await this.dbService.getUser(user_id);
-            //         if (existingUser.ok) {
-            //             if (existingUser.ok.data.length <= 0) {
-            //                 let res = await this.twitterService.userByUsername(username);
-            //                 await this.dbService.addUser(
-            //                     res.ok.data.id,
-            //                     res.ok.data.username,
-            //                     res.ok.data.name,
-            //                     res.ok.data?.profile_image_url,
-            //                     res.ok.data?.verified,
-            //                     res.ok.data?.location,
-            //                     res.ok.data?.url,
-            //                     res.ok.data?.protected,
-            //                     res.ok.data?.created_at,
-            //                     res.ok.data?.public_metrics?.followers_count,
-            //                     res.ok.data?.public_metrics?.following_count,
-            //                     res.ok.data?.public_metrics?.tweet_count
-            //                 );
-            //             }
-            //         }
-            //         else {
-            //             console.log(existingUser.err.message);
-            //         }
-            //     }
-            // }
-            // else {
-            //     console.log('tweet already exists');
-            // }
+            if (result.ok.data.length <= 0) {
+                let tokens: string[] = await this.nlpService.getTokens(text);
+
+                const keywords = await this.dbService.getAllKeywords();
+                const tokensIntersectionWithEnStopwords = tokens.filter(value => keywords.ok.data.includes(value));
+                if (tokensIntersectionWithEnStopwords.length > 0) {
+                    this.updateService.addToQueue(id);
+                    await this.dbService.addTweet({ id: id, text: text, user_id: user_id, username: username, created_at: created_at, likes: likes, retweeted: retweets, query: tweet });
+                    await this.dbService.updateTokenTable(tokens, text);
+                    let existingUser = await this.dbService.getUser(user_id);
+                    if (existingUser.ok) {
+                        if (existingUser.ok.data.length <= 0) {
+                            let res = await this.twitterService.userByUsername(username);
+                            await this.dbService.addUser(
+                                res.ok.data.id,
+                                res.ok.data.username,
+                                res.ok.data.name,
+                                res.ok.data?.profile_image_url,
+                                res.ok.data?.verified,
+                                res.ok.data?.location,
+                                res.ok.data?.url,
+                                res.ok.data?.protected,
+                                res.ok.data?.created_at,
+                                res.ok.data?.public_metrics?.followers_count,
+                                res.ok.data?.public_metrics?.following_count,
+                                res.ok.data?.public_metrics?.tweet_count
+                            );
+                        }
+                    }
+                    else {
+                        console.log(existingUser.err.message);
+                    }
+                }
+            }
+            else {
+                console.log('tweet already exists');
+            }
         }
 
     }
