@@ -7,7 +7,7 @@ const { removeStopwords, eng } = require('stopword')
 export class NlpService {
     private readonly tokenizer;
     constructor() {
-        this.tokenizer = new natural.AggressiveTokenizer();
+        this.tokenizer = new natural.WordTokenizer();
     }
 
     getHello(): string {
@@ -17,8 +17,10 @@ export class NlpService {
     private async clean(input: string[]): Promise<string[]> {
         let newString: string[] = [];
         for (const t of input) {
-            if (!t.includes("@") && !t.includes("https:") && !t.includes("www.") && !t.includes("http:"))
-                newString.push(t)
+            if (!t.includes("@") && !t.includes("https:") && !t.includes("www.") && !t.includes("http:") && !/\d/.test(t)) {
+                let str = t.replace(/[^\w\s]|_/g, "");
+                if (str.length > 0) { newString.push(str); }
+            }
         }
         return newString;
     }
@@ -28,18 +30,25 @@ export class NlpService {
         return tokens;
     }
 
-    async stem(word: string): Promise<string> {
-        let stem1 = natural.PorterStemmer.stem(word);
-        let stem2 = natural.LancasterStemmer.stem(word);
-        return stem2;
+    private async porterStem(word: string): Promise<string> {
+        return natural.PorterStemmer.stem(word);
+    }
+
+    private async lancasterStem(word: string): Promise<string> {
+        return natural.LancasterStemmer.stem(word);
+    }
+
+    private async removeStopwords(text: string[]) {
+        return removeStopwords(text, eng);
     }
 
     async getTokens(text: string): Promise<string[]> {
-        let cleanedText = await this.clean(text.toLowerCase().split(' '));
-        let tokens = await this.tokenize(cleanedText.join(' '));
-        const output = removeStopwords(tokens, eng);
-        return output;
+        let removedStopWords: string[] = await this.removeStopwords(text.toLowerCase().split(' '));
+
+        let cleaned: string[] = await this.clean(removedStopWords);
+
+        return cleaned;
     }
 
-    
+
 }

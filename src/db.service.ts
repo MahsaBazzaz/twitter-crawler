@@ -137,12 +137,11 @@ export class DbService {
     const allTokens = await this.getAllTokens();
     for (let i = 0; i < tweetTokens.length; i++) {
       const tokensIntersectionWithAllTokens = allTokens.ok.data.find(x => x.token == tweetTokens[i]);
-      var count = (text.match(tweetTokens[i]) || []).length;
       if (tokensIntersectionWithAllTokens != undefined) {
-        await this.updateToken(tweetTokens[i], count);
+        await this.updateToken(tweetTokens[i], 1);
       }
       else {
-        await this.addToken(tweetTokens[i], count);
+        await this.addToken(tweetTokens[i], 1);
       }
     }
   }
