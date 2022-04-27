@@ -41,9 +41,9 @@ export class UpdaterService {
 
     @Interval(3000)
     async update() {
-        console.log("update time! ");
+        // console.log("update time! ");
         if (this.queue.length > 0) {
-            console.log("update() " + this.index + this.queue[this.index]);
+            // console.log("update() " + this.index + this.queue[this.index]);
             let tweet: ResponseSchema<TweetV2> = await this.twitterService.tweet(this.queue[this.index]);
             if (tweet.ok) {
                 let res = await this.dbService.updateTweetLikesAndRetweets(tweet.ok.data);

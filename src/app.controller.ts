@@ -1,5 +1,6 @@
 import { Body, Controller, Get } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
+import { CRAWLER_CMD } from '../constants';
 import { AppService } from './app.service';
 import { CrawlerService } from './crawler.service';
 import { NlpService } from './nlp.service';
@@ -11,7 +12,6 @@ export class AppController {
     private readonly appService: AppService,
     private readonly crawlerService: CrawlerService,
     private readonly updaterService: UpdaterService,
-    private readonly nlpService : NlpService
   ) {
     this.startStream();
     this.updaterService.init();
@@ -47,9 +47,10 @@ export class AppController {
     this.crawlerService.stopStream();
   }
 
-  @Get("restartStream")
+  @MessagePattern("RESTART")
   restartStream() {
-    this.crawlerService.restartSream();
+    console.log("<><><><><><> restart <><><><>")
+    return this.crawlerService.restartSream();
   }
 
 }

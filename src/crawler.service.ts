@@ -58,7 +58,7 @@ export class CrawlerService {
             // Emitted when a Twitter payload (a tweet or not, given the endpoint).
             ETwitterStreamEvent.Data,
             eventData => {
-                console.log('Twitter has sent something:', eventData);
+                console.log('Twitter has sent something:', eventData.text);
                 this.processTweet(eventData);
             },
 
@@ -77,9 +77,11 @@ export class CrawlerService {
         this.streamFilter.close();
     }
 
-    async restartSream() {
+    async restartSream(): Promise<ResponseSchema<any>> {
+        console.log("restartSream()");
         this.stopStream();
         this.startStream();
+        return { ok: { data: null } }
     }
 
     async processTweet(tweet: any) {
@@ -93,55 +95,57 @@ export class CrawlerService {
         if (tweet.retweeted_status != undefined) {
             id = tweet.retweeted_status.id_str;
             tweet.retweeted_status?.extended_tweet != undefined ? text = tweet.retweeted_status.extended_tweet.full_text : text = tweet.retweeted_status.text;
-            username = tweet.retweeted_status.user.screen_name;
-            created_at = tweet.retweeted_status.created_at;
-            user_id = tweet.retweeted_status.user.id_str;
-            likes = tweet.retweeted_status.favorite_count;
-            retweets = tweet.retweeted_status.retweet_count;
+            username = tweet.retweeted_status?.user?.screen_name;
+            created_at = tweet.retweeted_status?.created_at;
+            user_id = tweet.retweeted_status.user?.id_str;
+            likes = tweet.retweeted_status?.favorite_count;
+            retweets = tweet.retweeted_status?.retweet_count;
         }
         else {
             id = tweet.id_str;
-            tweet?.extended_tweet != undefined ? text = tweet.extended_tweet.full_text : text = tweet.text;
-            username = tweet.user.screen_name;
-            created_at = tweet.created_at;
-            user_id = tweet.user.id_str;
-            likes = tweet.favorite_count;
-            retweets = tweet.retweet_count;
+            tweet?.extended_tweet != undefined ? text = tweet.extended_tweet?.full_text : text = tweet?.text;
+            username = tweet?.user?.screen_name;
+            created_at = tweet?.created_at;
+            user_id = tweet?.user.id_str;
+            likes = tweet?.favorite_count;
+            retweets = tweet?.retweet_count;
         }
         console.log(text);
         let result = await this.dbService.getTweet(id);
         if (result.ok) {
             if (result.ok.data.length <= 0) {
-                let tokens: string[] = await this.nlpService.getTokens(text);
+                if (id != undefined && text != undefined && username != undefined && user_id != undefined) {
+                    let tokens: string[] = await this.nlpService.getTokens(text);
 
-                const keywords = await this.dbService.getAllKeywords();
-                const tokensIntersectionWithEnStopwords = tokens.filter(value => keywords.ok.data.includes(value));
-                if (tokensIntersectionWithEnStopwords.length > 0) {
-                    this.updateService.addToQueue(id);
-                    await this.dbService.addTweet({ id: id, text: text, user_id: user_id, username: username, created_at: created_at, likes: likes, retweeted: retweets, query: tweet });
-                    await this.dbService.updateTokenTable(tokens, text);
-                    let existingUser = await this.dbService.getUser(user_id);
-                    if (existingUser.ok) {
-                        if (existingUser.ok.data.length <= 0) {
-                            let res = await this.twitterService.userByUsername(username);
-                            await this.dbService.addUser(
-                                res.ok.data.id,
-                                res.ok.data.username,
-                                res.ok.data.name,
-                                res.ok.data?.profile_image_url,
-                                res.ok.data?.verified,
-                                res.ok.data?.location,
-                                res.ok.data?.url,
-                                res.ok.data?.protected,
-                                res.ok.data?.created_at,
-                                res.ok.data?.public_metrics?.followers_count,
-                                res.ok.data?.public_metrics?.following_count,
-                                res.ok.data?.public_metrics?.tweet_count
-                            );
+                    const keywords = await this.dbService.getAllKeywords();
+                    const tokensIntersectionWithEnStopwords = tokens.filter(value => keywords.ok.data.includes(value));
+                    if (tokensIntersectionWithEnStopwords.length > 0) {
+                        this.updateService.addToQueue(id);
+                        await this.dbService.addTweet({ id: id, text: text, user_id: user_id, username: username, created_at: created_at, likes: likes, retweeted: retweets, query: tweet });
+                        await this.dbService.updateTokenTable(tokens, text);
+                        let existingUser = await this.dbService.getUser(user_id);
+                        if (existingUser.ok) {
+                            if (existingUser.ok.data.length <= 0) {
+                                let res = await this.twitterService.userByUsername(username);
+                                await this.dbService.addUser(
+                                    res.ok.data.id,
+                                    res.ok.data.username,
+                                    res.ok.data.name,
+                                    res.ok.data?.profile_image_url,
+                                    res.ok.data?.verified,
+                                    res.ok.data?.location,
+                                    res.ok.data?.url,
+                                    res.ok.data?.protected,
+                                    res.ok.data?.created_at,
+                                    res.ok.data?.public_metrics?.followers_count,
+                                    res.ok.data?.public_metrics?.following_count,
+                                    res.ok.data?.public_metrics?.tweet_count
+                                );
+                            }
                         }
-                    }
-                    else {
-                        console.log(existingUser.err.message);
+                        else {
+                            console.log(existingUser.err.message);
+                        }
                     }
                 }
             }
