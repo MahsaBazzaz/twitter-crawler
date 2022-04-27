@@ -14,7 +14,7 @@ export class DbService {
     return 'Hello World!';
   }
 
-  async getAllTweets(limit : number): Promise<ResponseSchema<Tweet[]>> {
+  async getAllTweets(limit: number): Promise<ResponseSchema<Tweet[]>> {
     const response = await this.knex.table('tweets')
       .orderBy('created_at', 'desc')
       .limit(limit)
@@ -27,7 +27,7 @@ export class DbService {
     return response;
   }
 
-  async getTweet(id : string): Promise<ResponseSchema<Tweet[]>> {
+  async getTweet(id: string): Promise<ResponseSchema<Tweet[]>> {
     const response = await this.knex.table('tweets')
       .where('tweet_id', id)
       .then(result => {
@@ -57,9 +57,7 @@ export class DbService {
   async getUser(id: string): Promise<ResponseSchema<any>> {
     let response = await this.knex.table('users').where('user_id', id)
       .then(result => {
-        if (result.length <= 0) {
-          return { ok: { data: result } }
-        }
+        return { ok: { data: result } }
       })
       .catch(err => {
         return { err: { message: err } };
