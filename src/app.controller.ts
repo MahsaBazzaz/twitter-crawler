@@ -14,7 +14,7 @@ export class AppController {
     private readonly updaterService: UpdaterService,
   ) {
     this.startStream();
-    this.updaterService.init();
+    // this.updaterService.init();
   }
 
   @Get()
@@ -36,6 +36,16 @@ export class AppController {
   // updateAllTokens() {
   //   return this.appService.updateAllTokens();
   // }
+
+  @Get("updateAllTweets")
+  updateAllTweets() {
+    return this.updaterService.updateAllTweets();
+  }
+
+  @Get("updateAllUsers")
+  updateAllUsers() {
+    return this.updaterService.updateAllUsers();
+  }
 
   @Get("start")
   startStream() {

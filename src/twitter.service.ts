@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
 import { InjectModel } from 'nest-knexjs';
 import 'dotenv/config';
-import { TweetStream, TweetV1, TweetV2SingleResult, TweetV2SingleStreamResult, TwitterApi, TwitterApiReadOnly } from 'twitter-api-v2';
+import { TweetStream, TweetV1, TweetV2SingleResult, TweetV2SingleStreamResult, TwitterApi, TwitterApiReadOnly, UserV2Result } from 'twitter-api-v2';
 import { ResponseSchema } from 'dtos';
 import { DbService } from './db.service';
 import { HttpService } from '@nestjs/axios';
@@ -57,4 +57,21 @@ export class TwitterService {
         }
     }
 
-}
+    async user(id: string): Promise<ResponseSchema<UserV2Result>> {
+        let response: ResponseSchema<UserV2Result>;
+        await this.roClient.v2.user(id,
+            {
+                "user.fields": ["created_at", "description", "entities", "id",
+                    "location", "name", "pinned_tweet_id", "profile_image_url",
+                    "protected", "public_metrics", "url", "username", "verified", "withheld"]
+            })
+            .then(result => {
+                response = { ok: { data: result } }
+            })
+            .catch(err => {
+                response = { err: { message: err } }
+            });
+        return response;
+    }
+
+};

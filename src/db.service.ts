@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ResponseSchema, Tweet } from 'dtos';
 import { Knex } from 'knex';
 import { InjectModel } from 'nest-knexjs';
-import { TweetV2 } from 'twitter-api-v2';
+import { TweetV2, UserV2Result } from 'twitter-api-v2';
 
 @Injectable()
 export class DbService {
@@ -206,11 +206,26 @@ export class DbService {
     }
   }
 
-  async updateTweetLikesAndRetweets(tweet: TweetV2,): Promise<ResponseSchema<any>> {
+  async updateTweetLikesAndRetweets(tweet: TweetV2): Promise<ResponseSchema<any>> {
     let response = await this.knex.table('tweets')
       .where('tweet_id', tweet.id)
       .increment('likes', tweet.public_metrics.like_count)
       .increment('retweets', tweet.public_metrics.retweet_count)
+      .then(result => {
+        return { ok: { data: result } }
+      })
+      .catch(err => {
+        return { err: { message: err } }
+      });
+    return response;
+  }
+
+  async updateFollowersAndFollowings(user: UserV2Result): Promise<ResponseSchema<any>> {
+    let response = await this.knex.table('users')
+      .where('user_id', user.data.id)
+      .update('tweet_count', user.data.public_metrics.tweet_count)
+      .update('followers_count', user.data.public_metrics.followers_count)
+      .update('following_count', user.data.public_metrics.following_count)
       .then(result => {
         return { ok: { data: result } }
       })

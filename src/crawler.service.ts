@@ -58,8 +58,8 @@ export class CrawlerService {
             // Emitted when a Twitter payload (a tweet or not, given the endpoint).
             ETwitterStreamEvent.Data,
             eventData => {
-                console.log('Twitter has sent something:', eventData.text);
-                this.processTweet(eventData);
+                // console.log('Twitter has sent something:', eventData.text);
+                if(eventData != undefined) this.processTweet(eventData);
             },
 
         );

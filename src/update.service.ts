@@ -4,15 +4,16 @@ import { InjectModel } from 'nest-knexjs';
 import 'dotenv/config';
 import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 import { TwitterService } from './twitter.service';
-import { TweetV2 } from 'twitter-api-v2';
+import { TweetV2, UserV2Result } from 'twitter-api-v2';
 import { ResponseSchema } from 'dtos';
 import { DbService } from './db.service';
 import e from 'express';
 
 @Injectable()
 export class UpdaterService {
-    private queue: string[] = [];
-    private index: number = 0;
+    private tweetQueue: string[] = [];
+    private userQueue: string[] = [];
+    private tweetQueueIndex: number = 0;
     constructor(
         private readonly twitterService: TwitterService,
         private readonly dbService: DbService
@@ -22,7 +23,7 @@ export class UpdaterService {
         const response = await this.dbService.getAllTweets(10);
         if (response.ok) {
             for (const tweet of response.ok.data) {
-                this.queue.push(tweet.tweet_id);
+                this.tweetQueue.push(tweet.tweet_id);
             }
         }
         else {
@@ -35,22 +36,22 @@ export class UpdaterService {
 
     addToQueue(id: string) {
         console.log("addToQueue() " + id);
-        this.queue.push(id);
-        if (this.queue.length > 30) this.queue.shift();
+        this.tweetQueue.push(id);
+        if (this.tweetQueue.length > 30) this.tweetQueue.shift();
     }
 
-    @Interval(3000)
-    async update() {
+    // @Interval(3000)
+    async updateTweet() {
         // console.log("update time! ");
-        if (this.queue.length > 0) {
+        if (this.tweetQueue.length > 0) {
             // console.log("update() " + this.index + this.queue[this.index]);
-            let tweet: ResponseSchema<TweetV2> = await this.twitterService.tweet(this.queue[this.index]);
+            let tweet: ResponseSchema<TweetV2> = await this.twitterService.tweet(this.tweetQueue[this.tweetQueueIndex]);
             if (tweet.ok) {
                 let res = await this.dbService.updateTweetLikesAndRetweets(tweet.ok.data);
                 if (res.ok) {
                     console.log("update() ok: " + res.ok.data)
-                    this.index++;
-                    if (this.index >= this.queue.length) this.index = 0
+                    this.tweetQueueIndex++;
+                    if (this.tweetQueueIndex >= this.tweetQueue.length) this.tweetQueueIndex = 0;
                 }
                 else {
                     console.log(res.err.message);
@@ -58,7 +59,46 @@ export class UpdaterService {
             }
             else {
                 console.log("update() twitter err: " + tweet.err.message);
+                this.tweetQueue.splice(this.tweetQueueIndex, 1);
             }
+        }
+    }
+
+    @Interval(1000)
+    async updateUser() {
+        // console.log("update time! ");
+        if (this.userQueue.length > 0) {
+            // console.log("update() " + this.index + this.queue[this.index]);
+            let index = this.userQueue.pop();
+            let user: ResponseSchema<UserV2Result> = await this.twitterService.user(index);
+            if (user.ok) {
+                let res = await this.dbService.updateFollowersAndFollowings(user.ok.data);
+                if (res.ok) {
+                    console.log("update() ok: " + res.ok.data)
+                }
+                else {
+                    console.log(res.err.message);
+                }
+            }
+            else {
+                console.log("update() twitter err: " + user.err.message);
+            }
+        }
+    }
+
+    async updateAllTweets() {
+        const tweets = await this.dbService.getAllTweets();
+        this.tweetQueue = [];
+        for (const tweet of tweets.ok.data) {
+            this.tweetQueue.push(tweet.tweet_id);
+        }
+    }
+
+    async updateAllUsers() {
+        const users = await this.dbService.getAllUserIds();
+        this.userQueue = [];
+        for (const user of users.ok.data) {
+            this.userQueue.push(user);
         }
     }
 }
