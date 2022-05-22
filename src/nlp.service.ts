@@ -14,16 +14,7 @@ export class NlpService {
         return 'Hello World!';
     }
 
-    private async clean(input: string[]): Promise<string[]> {
-        let newString: string[] = [];
-        for (const t of input) {
-            if (!t.includes("@") && !t.includes("https:") && !t.includes("www.") && !t.includes("http:") && !/\d/.test(t)) {
-                let str = t.replace(/[^\w\s]|_/g, "");
-                if (str.length > 0) { newString.push(str); }
-            }
-        }
-        return newString;
-    }
+
 
     private async tokenize(text: string): Promise<string[]> {
         let tokens = this.tokenizer.tokenize(text);
@@ -38,8 +29,15 @@ export class NlpService {
         return natural.LancasterStemmer.stem(word);
     }
 
-    private async removeStopwords(text: string[]) {
-        return removeStopwords(text, eng);
+    async getHashtags(text: string): Promise<string[]> {
+        let hashtags = [];
+        let splitted: string[] = await this.removeStopwords(text.toLowerCase().split(' '));
+        for (const t of splitted) {
+            if (t.startsWith("#")) {
+                hashtags.push(t);
+            }
+        }
+        return hashtags;
     }
 
     async getTokens(text: string): Promise<string[]> {
@@ -50,5 +48,19 @@ export class NlpService {
         return cleaned;
     }
 
+    private async removeStopwords(text: string[]) {
+        return removeStopwords(text, eng);
+    }
+
+    private async clean(input: string[]): Promise<string[]> {
+        let newString: string[] = [];
+        for (const t of input) {
+            if (!t.includes("@") && !t.includes("https:") && !t.includes("www.") && !t.includes("http:") && !/\d/.test(t)) {
+                let str = t.replace(/[^\w\s]|_/g, "");
+                if (str.length > 0) { newString.push(str); }
+            }
+        }
+        return newString;
+    }
 
 }

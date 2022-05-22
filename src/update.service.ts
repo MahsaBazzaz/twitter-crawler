@@ -20,7 +20,7 @@ export class UpdaterService {
     ) { }
 
     async init() {
-        const response = await this.dbService.getAllTweets(10);
+        const response = await this.dbService.getAllTweets();
         if (response.ok) {
             for (const tweet of response.ok.data) {
                 this.tweetQueue.push(tweet.tweet_id);
@@ -37,17 +37,15 @@ export class UpdaterService {
     addToQueue(id: string) {
         console.log("addToQueue() " + id);
         this.tweetQueue.push(id);
-        if (this.tweetQueue.length > 30) this.tweetQueue.shift();
+        if (this.tweetQueue.length > 100) this.tweetQueue.shift();
     }
 
     // @Interval(3000)
     async updateTweet() {
-        // console.log("update time! ");
         if (this.tweetQueue.length > 0) {
-            // console.log("update() " + this.index + this.queue[this.index]);
             let tweet: ResponseSchema<TweetV2> = await this.twitterService.tweet(this.tweetQueue[this.tweetQueueIndex]);
             if (tweet.ok) {
-                let res = await this.dbService.updateTweetLikesAndRetweets(tweet.ok.data);
+                let res = await this.dbService.updateTweet(tweet.ok.data.id,tweet.ok.data.public_metrics.like_count,tweet.ok.data.public_metrics.retweet_count);
                 if (res.ok) {
                     console.log("update() ok: " + res.ok.data)
                     this.tweetQueueIndex++;
@@ -64,7 +62,7 @@ export class UpdaterService {
         }
     }
 
-    @Interval(1000)
+    // @Interval(1000)
     async updateUser() {
         // console.log("update time! ");
         if (this.userQueue.length > 0) {

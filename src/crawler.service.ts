@@ -59,7 +59,7 @@ export class CrawlerService {
             ETwitterStreamEvent.Data,
             eventData => {
                 // console.log('Twitter has sent something:', eventData.text);
-                if(eventData != undefined) this.processTweet(eventData);
+                if (eventData != undefined) this.processTweet(eventData);
             },
 
         );
@@ -91,7 +91,9 @@ export class CrawlerService {
         let created_at: string;
         let user_id: string;
         let likes: number;
-        let retweets: number
+        let retweets: number;
+        let tweetsHashtags: any;
+
         if (tweet.retweeted_status != undefined) {
             id = tweet.retweeted_status.id_str;
             tweet.retweeted_status?.extended_tweet != undefined ? text = tweet.retweeted_status.extended_tweet.full_text : text = tweet.retweeted_status.text;
@@ -100,6 +102,7 @@ export class CrawlerService {
             user_id = tweet.retweeted_status.user?.id_str;
             likes = tweet.retweeted_status?.favorite_count;
             retweets = tweet.retweeted_status?.retweet_count;
+            tweetsHashtags = tweet.retweeted_status?.entities['hashtags'];
         }
         else {
             id = tweet.id_str;
@@ -109,8 +112,12 @@ export class CrawlerService {
             user_id = tweet?.user.id_str;
             likes = tweet?.favorite_count;
             retweets = tweet?.retweet_count;
+            tweetsHashtags = tweet?.entities['hashtags'];
         }
         console.log(text);
+        if (tweetsHashtags.length <= 0) {
+            tweetsHashtags = await this.nlpService.getHashtags(text);
+        }
         let result = await this.dbService.getTweet(id);
         if (result.ok) {
             if (result.ok.data.length <= 0) {
@@ -118,10 +125,20 @@ export class CrawlerService {
                     let tokens: string[] = await this.nlpService.getTokens(text);
 
                     const keywords = await this.dbService.getAllKeywords();
-                    const tokensIntersectionWithEnStopwords = tokens.filter(value => keywords.ok.data.includes(value));
-                    if (tokensIntersectionWithEnStopwords.length > 0) {
+                    const tokensIntersectionWithkeywords = tokens.filter(value => keywords.ok.data.includes(value));
+                    if (tokensIntersectionWithkeywords.length > 0) {
                         this.updateService.addToQueue(id);
-                        await this.dbService.addTweet({ id: id, text: text, user_id: user_id, username: username, created_at: created_at, likes: likes, retweeted: retweets, query: tweet });
+                        await this.dbService.addTweet({
+                            id: id,
+                            text: text,
+                            user_id: user_id,
+                            username: username,
+                            created_at: created_at,
+                            likes: likes,
+                            retweeted: retweets,
+                            query: tweet,
+                            hashtags: tweetsHashtags
+                        });
                         await this.dbService.updateTokenTable(tokens, text);
                         let existingUser = await this.dbService.getUser(user_id);
                         if (existingUser.ok) {
@@ -151,6 +168,7 @@ export class CrawlerService {
             }
             else {
                 console.log('tweet already exists');
+                this.dbService.updateTweet(id, likes, retweets);
             }
         }
 

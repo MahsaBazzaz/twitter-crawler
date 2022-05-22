@@ -3,6 +3,7 @@ import { MessagePattern } from '@nestjs/microservices';
 import { CRAWLER_CMD } from '../constants';
 import { AppService } from './app.service';
 import { CrawlerService } from './crawler.service';
+import { DbService } from './db.service';
 import { NlpService } from './nlp.service';
 import { UpdaterService } from './update.service';
 
@@ -12,9 +13,10 @@ export class AppController {
     private readonly appService: AppService,
     private readonly crawlerService: CrawlerService,
     private readonly updaterService: UpdaterService,
+    private readonly dbService : DbService
   ) {
     this.startStream();
-    // this.updaterService.init();
+    this.updaterService.init();
   }
 
   @Get()
@@ -55,6 +57,11 @@ export class AppController {
   @Get("stop")
   stopStream() {
     this.crawlerService.stopStream();
+  }
+
+  @Get("hashtags")
+  hashtags() {
+    this.dbService.updateHashtags();
   }
 
   @MessagePattern("RESTART")

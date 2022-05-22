@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { ResponseSchema, Tweet } from 'dtos';
 import { Knex } from 'knex';
 import { InjectModel } from 'nest-knexjs';
-import { TweetV2, UserV2Result } from 'twitter-api-v2';
+import { json } from 'stream/consumers';
+import { TweetV1, TweetV2, UserV2Result } from 'twitter-api-v2';
 
 @Injectable()
 export class DbService {
@@ -112,8 +113,10 @@ export class DbService {
     created_at: string,
     likes: number,
     retweeted: number,
-    query: any
+    query: any,
+    hashtags: any
   }) {
+    console.log(data.query?.entities?.hashtags);
     await this.knex.table('tweets').insert(
       [{
         tweet_id: data.id,
@@ -123,7 +126,8 @@ export class DbService {
         created_at: data.created_at,
         likes: data.likes,
         retweets: data.retweeted,
-        query: data.query
+        query: data.query,
+        hashtags: data.hashtags
       }], '*')
       .then(result => {
         console.log("addTweet() ok:" + result);
@@ -206,11 +210,25 @@ export class DbService {
     }
   }
 
-  async updateTweetLikesAndRetweets(tweet: TweetV2): Promise<ResponseSchema<any>> {
+  // async updateTweetLikesAndRetweets(tweet: TweetV2): Promise<ResponseSchema<any>> {
+  //   let response = await this.knex.table('tweets')
+  //     .where('tweet_id', tweet.id)
+  //     .update('likes', tweet.public_metrics.like_count)
+  //     .update('retweets', tweet.public_metrics.retweet_count)
+  //     .then(result => {
+  //       return { ok: { data: result } }
+  //     })
+  //     .catch(err => {
+  //       return { err: { message: err } }
+  //     });
+  //   return response;
+  // }
+
+  async updateTweet(id: string, likes: number, retweets: number): Promise<ResponseSchema<any>> {
     let response = await this.knex.table('tweets')
-      .where('tweet_id', tweet.id)
-      .increment('likes', tweet.public_metrics.like_count)
-      .increment('retweets', tweet.public_metrics.retweet_count)
+      .where('tweet_id', id)
+      .update('likes', likes)
+      .update('retweets', retweets)
       .then(result => {
         return { ok: { data: result } }
       })
@@ -219,6 +237,7 @@ export class DbService {
       });
     return response;
   }
+
 
   async updateFollowersAndFollowings(user: UserV2Result): Promise<ResponseSchema<any>> {
     let response = await this.knex.table('users')
@@ -233,6 +252,40 @@ export class DbService {
         return { err: { message: err } }
       });
     return response;
+  }
+
+  async updateHashtags() {
+    let query = [];
+    await this.knex.raw(`SELECT id, query::json->'entities' ->> 'hashtags' as hashtagField FROM tweets;`)
+      .then(result => {
+        query = result.rows;
+      })
+      .catch(err => {
+        console.log(err);
+      });
+
+    console.log(query);
+
+    for (let i = 0; i < query.length; i++) {
+      let hashtagsJson = JSON.parse(query[i].hashtagfield);
+      if (hashtagsJson.length > 0) {
+        let hashtags = [];
+        for (let j = 0; j < hashtagsJson.length; j++) {
+          hashtags.push(hashtagsJson[j].text);
+        }
+        console.log("id: " + query[i].id + " hashtags: " + hashtags);
+        await this.knex('tweets')
+          .update('hashtags', hashtags)
+          .where('id', query[i].id)
+          .then(result => {
+            return { ok: { data: result } }
+          })
+          .catch(err => {
+            return { err: { message: err } }
+          });
+      }
+    }
+
   }
 
 }
