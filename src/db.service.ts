@@ -4,12 +4,14 @@ import { Knex } from 'knex';
 import { InjectModel } from 'nest-knexjs';
 import { json } from 'stream/consumers';
 import { TweetV1, TweetV2, UserV2Result } from 'twitter-api-v2';
+import { NlpService } from './nlp.service';
 
 @Injectable()
 export class DbService {
 
   constructor(
     @InjectModel() private readonly knex: Knex,
+    private readonly nlpService: NlpService
   ) { }
   getHello(): string {
     return 'Hello World!';
@@ -116,7 +118,6 @@ export class DbService {
     query: any,
     hashtags: any
   }) {
-    console.log(data.query?.entities?.hashtags);
     await this.knex.table('tweets').insert(
       [{
         tweet_id: data.id,
@@ -137,6 +138,20 @@ export class DbService {
       });
   }
 
+  async addRetweet(userId: string, username: string, ownerId: string, ownername: string, tweetId: string) {
+    await this.knex.table('retweets').insert(
+      [{
+        user_id: userId,
+        user_name: username,
+        owner_id: ownerId,
+        owner_name: ownername,
+        tweet_id: tweetId,
+      }], '*')
+      .then(result => {
+      })
+      .catch(err => {
+      });
+  }
   async updateTokenTable(tweetTokens: string[], text: string) {
     const allTokens = await this.getAllTokens();
     for (let i = 0; i < tweetTokens.length; i++) {
@@ -210,20 +225,6 @@ export class DbService {
     }
   }
 
-  // async updateTweetLikesAndRetweets(tweet: TweetV2): Promise<ResponseSchema<any>> {
-  //   let response = await this.knex.table('tweets')
-  //     .where('tweet_id', tweet.id)
-  //     .update('likes', tweet.public_metrics.like_count)
-  //     .update('retweets', tweet.public_metrics.retweet_count)
-  //     .then(result => {
-  //       return { ok: { data: result } }
-  //     })
-  //     .catch(err => {
-  //       return { err: { message: err } }
-  //     });
-  //   return response;
-  // }
-
   async updateTweet(id: string, likes: number, retweets: number): Promise<ResponseSchema<any>> {
     let response = await this.knex.table('tweets')
       .where('tweet_id', id)
@@ -254,38 +255,52 @@ export class DbService {
     return response;
   }
 
-  async updateHashtags() {
-    let query = [];
-    await this.knex.raw(`SELECT id, query::json->'entities' ->> 'hashtags' as hashtagField FROM tweets;`)
+  // async updateHashtags() {
+
+  //   let query = [];
+  //   await this.knex.table('tweets').select('hashtags', 'id', 'text')
+  //     .then(result => {
+  //       query = result;
+  //     })
+  //     .catch(err => {
+  //       console.log(err);
+  //     });
+
+  //   console.log(query.length);
+  //   for (let i = 0; i < query.length; i++) {
+  //     if (query[i].hashtags == null || query[i].hashtags.length <= 0) {
+  //       let hashtagss = await this.nlpService.getHashtags(query[i].text);
+  //       console.log(`id : ${query[i].id}, hashtags: ${hashtagss}`);
+  //       await this.knex.table('tweets') //TODO
+  //         .update('hashtags', hashtagss)
+  //         .where('id', query[i].id)
+  //         .then(result => {
+  //           console.log(result);
+  //         })
+  //         .catch(err => {
+  //           console.log(err);
+  //         });
+  //     }
+  //   }
+  // }
+
+  async getGrowthRate(interval: number): Promise<ResponseSchema<number>> {
+    const res = await this.knex.raw(`WITH cte AS (
+      SELECT DISTINCT
+      EXTRACT(hour  FROM created_at) AS _hour
+      ,count(*) OVER (PARTITION BY EXTRACT(hour  FROM created_at)) AS _count
+      FROM tweets
+      WHERE created_at >= current_date at time zone 'UTC' - interval '${interval} hours'	
+    )
+    SELECT _count - LAG (_count) OVER (ORDER BY _hour ASC) AS _growth
+    FROM  cte`)
       .then(result => {
-        query = result.rows;
+        return { ok: { data: Math.floor(result.rows[0].avg / 60) } }
       })
       .catch(err => {
-        console.log(err);
+        return { err: { message: err } }
       });
-
-    console.log(query);
-
-    for (let i = 0; i < query.length; i++) {
-      let hashtagsJson = JSON.parse(query[i].hashtagfield);
-      if (hashtagsJson.length > 0) {
-        let hashtags = [];
-        for (let j = 0; j < hashtagsJson.length; j++) {
-          hashtags.push(hashtagsJson[j].text);
-        }
-        console.log("id: " + query[i].id + " hashtags: " + hashtags);
-        await this.knex('tweets')
-          .update('hashtags', hashtags)
-          .where('id', query[i].id)
-          .then(result => {
-            return { ok: { data: result } }
-          })
-          .catch(err => {
-            return { err: { message: err } }
-          });
-      }
-    }
-
+    return res;
   }
 
 }

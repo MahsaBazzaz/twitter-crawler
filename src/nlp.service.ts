@@ -30,18 +30,16 @@ export class NlpService {
     }
 
     async getHashtags(text: string): Promise<string[]> {
-        let hashtags = [];
-        let splitted: string[] = await this.removeStopwords(text.toLowerCase().split(' '));
-        for (const t of splitted) {
-            if (t.startsWith("#")) {
-                hashtags.push(t);
-            }
-        }
-        return hashtags;
+        let hashtags: string[] = text.toLowerCase().match(/#[a-z]+/gi);
+        if (hashtags != null)
+            return hashtags
+        else
+            return [];
     }
 
     async getTokens(text: string): Promise<string[]> {
-        let removedStopWords: string[] = await this.removeStopwords(text.toLowerCase().split(' '));
+        let txt = this.getWords(text);
+        let removedStopWords: string[] = await removeStopwords(txt.toLowerCase().split(' '));
 
         let cleaned: string[] = await this.clean(removedStopWords);
 
@@ -50,6 +48,16 @@ export class NlpService {
 
     private async removeStopwords(text: string[]) {
         return removeStopwords(text, eng);
+    }
+
+    private getWords(str: string): string {
+        if ((str === null) || (str === ''))
+            return '';
+        else
+            str = str.toString();
+        let pattern = /[^\x20\x2D0-9A-Z\x5Fa-z\xC0-\xD6\xD8-\xF6\xF8-\xFF]/g;
+        let text = str.replace(pattern, '');
+        return text;
     }
 
     private async clean(input: string[]): Promise<string[]> {

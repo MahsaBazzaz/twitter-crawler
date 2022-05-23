@@ -59,10 +59,10 @@ export class AppController {
     this.crawlerService.stopStream();
   }
 
-  @Get("hashtags")
-  hashtags() {
-    this.dbService.updateHashtags();
-  }
+  // @Get("hashtags")
+  // hashtags() {
+  //   this.dbService.updateHashtags();
+  // }
 
   @MessagePattern("RESTART")
   restartStream() {

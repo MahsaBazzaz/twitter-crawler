@@ -40,12 +40,12 @@ export class UpdaterService {
         if (this.tweetQueue.length > 100) this.tweetQueue.shift();
     }
 
-    // @Interval(3000)
+    @Cron('31 * * * * *')
     async updateTweet() {
         if (this.tweetQueue.length > 0) {
             let tweet: ResponseSchema<TweetV2> = await this.twitterService.tweet(this.tweetQueue[this.tweetQueueIndex]);
             if (tweet.ok) {
-                let res = await this.dbService.updateTweet(tweet.ok.data.id,tweet.ok.data.public_metrics.like_count,tweet.ok.data.public_metrics.retweet_count);
+                let res = await this.dbService.updateTweet(tweet.ok.data.id, tweet.ok.data.public_metrics.like_count, tweet.ok.data.public_metrics.retweet_count);
                 if (res.ok) {
                     console.log("update() ok: " + res.ok.data)
                     this.tweetQueueIndex++;
@@ -62,7 +62,7 @@ export class UpdaterService {
         }
     }
 
-    // @Interval(1000)
+    @Cron('1 * * * * *')
     async updateUser() {
         // console.log("update time! ");
         if (this.userQueue.length > 0) {
@@ -97,6 +97,14 @@ export class UpdaterService {
         this.userQueue = [];
         for (const user of users.ok.data) {
             this.userQueue.push(user);
+        }
+    }
+
+    @Cron('0 1 * * * *')
+    async controlGrowth() {
+        let res = await this.dbService.getGrowthRate(1);
+        if (res.ok.data > 50) {
+            console.log("ALARM!!")
         }
     }
 }

@@ -92,88 +92,80 @@ export class CrawlerService {
         let user_id: string;
         let likes: number;
         let retweets: number;
-        let tweetsHashtags: any;
+        let tweetsHashtags: string[] = [];
 
-        if (tweet.retweeted_status != undefined) {
-            id = tweet.retweeted_status.id_str;
-            tweet.retweeted_status?.extended_tweet != undefined ? text = tweet.retweeted_status.extended_tweet.full_text : text = tweet.retweeted_status.text;
-            username = tweet.retweeted_status?.user?.screen_name;
-            created_at = tweet.retweeted_status?.created_at;
-            user_id = tweet.retweeted_status.user?.id_str;
-            likes = tweet.retweeted_status?.favorite_count;
-            retweets = tweet.retweeted_status?.retweet_count;
-            tweetsHashtags = tweet.retweeted_status?.entities['hashtags'];
-        }
-        else {
-            id = tweet.id_str;
-            tweet?.extended_tweet != undefined ? text = tweet.extended_tweet?.full_text : text = tweet?.text;
-            username = tweet?.user?.screen_name;
-            created_at = tweet?.created_at;
-            user_id = tweet?.user.id_str;
-            likes = tweet?.favorite_count;
-            retweets = tweet?.retweet_count;
-            tweetsHashtags = tweet?.entities['hashtags'];
-        }
-        console.log(text);
-        if (tweetsHashtags.length <= 0) {
-            tweetsHashtags = await this.nlpService.getHashtags(text);
-        }
-        let result = await this.dbService.getTweet(id);
-        if (result.ok) {
-            if (result.ok.data.length <= 0) {
-                if (id != undefined && text != undefined && username != undefined && user_id != undefined) {
-                    let tokens: string[] = await this.nlpService.getTokens(text);
-
-                    const keywords = await this.dbService.getAllKeywords();
-                    const tokensIntersectionWithkeywords = tokens.filter(value => keywords.ok.data.includes(value));
-                    if (tokensIntersectionWithkeywords.length > 0) {
-                        this.updateService.addToQueue(id);
-                        await this.dbService.addTweet({
-                            id: id,
-                            text: text,
-                            user_id: user_id,
-                            username: username,
-                            created_at: created_at,
-                            likes: likes,
-                            retweeted: retweets,
-                            query: tweet,
-                            hashtags: tweetsHashtags
-                        });
-                        await this.dbService.updateTokenTable(tokens, text);
-                        let existingUser = await this.dbService.getUser(user_id);
-                        if (existingUser.ok) {
-                            if (existingUser.ok.data.length <= 0) {
-                                let res = await this.twitterService.userByUsername(username);
-                                await this.dbService.addUser(
-                                    res.ok.data.id,
-                                    res.ok.data.username,
-                                    res.ok.data.name,
-                                    res.ok.data?.profile_image_url,
-                                    res.ok.data?.verified,
-                                    res.ok.data?.location,
-                                    res.ok.data?.url,
-                                    res.ok.data?.protected,
-                                    res.ok.data?.created_at,
-                                    res.ok.data?.public_metrics?.followers_count,
-                                    res.ok.data?.public_metrics?.following_count,
-                                    res.ok.data?.public_metrics?.tweet_count
-                                );
-                            }
-                        }
-                        else {
-                            console.log(existingUser.err.message);
-                        }
-                    }
+        if (tweet.id) {
+            if (tweet.retweeted_status != undefined) {
+                id = tweet.retweeted_status.id_str;
+                tweet.retweeted_status?.extended_tweet != undefined ? text = tweet.retweeted_status.extended_tweet.full_text : text = tweet.retweeted_status.text;
+                username = tweet.retweeted_status?.user?.screen_name;
+                created_at = tweet.retweeted_status?.created_at;
+                user_id = tweet.retweeted_status.user?.id_str;
+                likes = tweet.retweeted_status?.favorite_count;
+                retweets = tweet.retweeted_status?.retweet_count;
+                if (tweet.retweeted_status?.entities['hashtags'] != null) {
+                    tweet.retweeted_status?.entities['hashtags'].forEach(element => {
+                        tweetsHashtags.push(element.text);
+                    });
                 }
             }
             else {
-                console.log('tweet already exists');
-                this.dbService.updateTweet(id, likes, retweets);
+                id = tweet.id_str;
+                tweet?.extended_tweet != undefined ? text = tweet.extended_tweet?.full_text : text = tweet?.text;
+                username = tweet?.user?.screen_name;
+                created_at = tweet?.created_at;
+                user_id = tweet?.user.id_str;
+                likes = tweet?.favorite_count;
+                retweets = tweet?.retweet_count;
+                if (tweet?.entities['hashtags'] != null) {
+                    tweet?.entities['hashtags'].forEach(element => {
+                        tweetsHashtags.push(element.text);
+                    });
+                }
             }
+            if (tweetsHashtags.length <= 0) {
+                tweetsHashtags = await this.nlpService.getHashtags(text);
+            }
+
+            let tweetUser = await this.dbService.getUser(tweet?.user.id_str);
+            let OwnerUser = await this.dbService.getUser(user_id);
+
+            if (tweetUser.ok.data.length > 0 && OwnerUser.ok.data.length > 0) {
+                if (tweet.retweeted_status != undefined && tweet?.user.id_str != tweet.retweeted_status.user?.id_str)
+                    this.dbService.addRetweet(tweet?.user.id_str, tweet?.user.screen_name, tweet.retweeted_status.user?.id_str, tweet.retweeted_status?.user?.screen_name, tweet.retweeted_status.id_str);
+
+                let result = await this.dbService.getTweet(id);
+                if (result.ok) {
+                    if (result.ok.data.length <= 0) {
+                        if (id != undefined && text != undefined && username != undefined && user_id != undefined) {
+                            let tokens: string[] = await this.nlpService.getTokens(text);
+
+                            const keywords = await this.dbService.getAllKeywords();
+                            const tokensIntersectionWithkeywords = tokens.filter(value => keywords.ok.data.includes(value));
+                            if (tokensIntersectionWithkeywords.length > 0) {
+                                this.updateService.addToQueue(id);
+                                await this.dbService.addTweet({
+                                    id: id,
+                                    text: text,
+                                    user_id: user_id,
+                                    username: username,
+                                    created_at: created_at,
+                                    likes: likes,
+                                    retweeted: retweets,
+                                    query: tweet,
+                                    hashtags: tweetsHashtags
+                                });
+                                await this.dbService.updateTokenTable(tokens, text);
+                            }
+                        }
+                    }
+                    else {
+                        console.log('tweet already exists');
+                        this.dbService.updateTweet(id, likes, retweets);
+                    }
+                }
+            }
+            console.log(text);
         }
-
     }
-
-
-
 }
