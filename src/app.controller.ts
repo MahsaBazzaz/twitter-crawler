@@ -15,8 +15,8 @@ export class AppController {
     private readonly updaterService: UpdaterService,
     private readonly dbService : DbService
   ) {
-    // this.startStream();
-    // this.updaterService.init();
+    this.startStream();
+    this.updaterService.init();
   }
 
   @Get()
@@ -34,10 +34,10 @@ export class AppController {
   //   return this.nlpService.getTokens(text);
   // }
 
-  // @Get("updateAllTokens")
-  // updateAllTokens() {
-  //   return this.appService.updateAllTokens();
-  // }
+  @Get("updateAllTokens")
+  updateAllTokens() {
+    return this.appService.updateAllTokens();
+  }
 
   @Get("updateAllTweets")
   updateAllTweets() {

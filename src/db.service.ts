@@ -155,7 +155,7 @@ export class DbService {
   async updateTokenTable(tweetTokens: string[], text: string) {
     const allTokens = await this.getAllTokens();
     for (let i = 0; i < tweetTokens.length; i++) {
-      const tokensIntersectionWithAllTokens = allTokens.ok.data.find(x => x.token == tweetTokens[i]);
+      const tokensIntersectionWithAllTokens = allTokens.ok.data.find(x => x.token.toLowerCase() == tweetTokens[i].toLowerCase());
       if (tokensIntersectionWithAllTokens != undefined) {
         await this.updateToken(tweetTokens[i], 1);
       }
