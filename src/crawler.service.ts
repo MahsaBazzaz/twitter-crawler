@@ -130,8 +130,27 @@ export class CrawlerService {
             let tweetUser = await this.dbService.getUser(tweet?.user.id_str);
             let OwnerUser = await this.dbService.getUser(user_id);
 
-            if (tweetUser.ok.data.length > 0 && OwnerUser.ok.data.length > 0) {
-                if (tweet.retweeted_status != undefined && tweet?.user.id_str != tweet.retweeted_status.user?.id_str)
+            if (OwnerUser.ok.data.length > 0) {
+                if (tweetUser.ok.data.length <= 0) {
+                    let res = await this.twitterService.userByUsername(tweet?.user?.screen_name);
+                    await this.dbService.addUser(
+                        res.ok.data.id,
+                        res.ok.data.username,
+                        res.ok.data.name,
+                        res.ok.data?.profile_image_url,
+                        res.ok.data?.verified,
+                        res.ok.data?.location,
+                        res.ok.data?.url,
+                        res.ok.data?.protected,
+                        res.ok.data?.created_at,
+                        res.ok.data?.public_metrics?.followers_count,
+                        res.ok.data?.public_metrics?.following_count,
+                        res.ok.data?.public_metrics?.tweet_count
+                    );
+                }
+
+                tweetUser = await this.dbService.getUser(tweet?.user.id_str);
+                if (tweet.retweeted_status != undefined && tweet?.user.id_str != tweet.retweeted_status.user?.id_str && tweetUser.ok.data.length > 0)
                     this.dbService.addRetweet(tweet?.user.id_str, tweet?.user.screen_name, tweet.retweeted_status.user?.id_str, tweet.retweeted_status?.user?.screen_name, tweet.retweeted_status.id_str);
 
                 let result = await this.dbService.getTweet(id);

@@ -268,10 +268,10 @@ export class DbService {
 
   //   console.log(query.length);
   //   for (let i = 0; i < query.length; i++) {
-  //     if (query[i].hashtags == null || query[i].hashtags.length <= 0) {
+  //     if (query[i].hashtags == null) {
   //       let hashtagss = await this.nlpService.getHashtags(query[i].text);
   //       console.log(`id : ${query[i].id}, hashtags: ${hashtagss}`);
-  //       await this.knex.table('tweets') //TODO
+  //       await this.knex.table('tweets')
   //         .update('hashtags', hashtagss)
   //         .where('id', query[i].id)
   //         .then(result => {

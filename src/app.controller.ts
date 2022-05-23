@@ -15,8 +15,8 @@ export class AppController {
     private readonly updaterService: UpdaterService,
     private readonly dbService : DbService
   ) {
-    this.startStream();
-    this.updaterService.init();
+    // this.startStream();
+    // this.updaterService.init();
   }
 
   @Get()

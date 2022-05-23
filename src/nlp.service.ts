@@ -30,11 +30,17 @@ export class NlpService {
     }
 
     async getHashtags(text: string): Promise<string[]> {
-        let hashtags: string[] = text.toLowerCase().match(/#[a-z]+/gi);
-        if (hashtags != null)
-            return hashtags
-        else
-            return [];
+        let hashtags: string[] = [];
+        let matched: string[] = text.toLowerCase().match(/#[a-z]+/gi);
+        if (matched != null) {
+            for (const t of matched) {
+                if (t.startsWith("#")) {
+                    hashtags.push(t.substring(1));
+                }
+            }
+            return hashtags;
+        }
+        else { return []; }
     }
 
     async getTokens(text: string): Promise<string[]> {
