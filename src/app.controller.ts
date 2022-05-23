@@ -13,7 +13,7 @@ export class AppController {
     private readonly appService: AppService,
     private readonly crawlerService: CrawlerService,
     private readonly updaterService: UpdaterService,
-    private readonly dbService : DbService
+    private readonly dbService: DbService
   ) {
     this.startStream();
     this.updaterService.init();
@@ -69,5 +69,4 @@ export class AppController {
     console.log("<><><><><><> restart <><><><>")
     return this.crawlerService.restartSream();
   }
-
 }

@@ -99,12 +99,4 @@ export class UpdaterService {
             this.userQueue.push(user);
         }
     }
-
-    @Cron('0 1 * * * *')
-    async controlGrowth() {
-        let res = await this.dbService.getGrowthRate(1);
-        if (res.ok.data > 50) {
-            console.log("ALARM!!")
-        }
-    }
 }

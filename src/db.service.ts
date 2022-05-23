@@ -284,23 +284,4 @@ export class DbService {
   //   }
   // }
 
-  async getGrowthRate(interval: number): Promise<ResponseSchema<number>> {
-    const res = await this.knex.raw(`WITH cte AS (
-      SELECT DISTINCT
-      EXTRACT(hour  FROM created_at) AS _hour
-      ,count(*) OVER (PARTITION BY EXTRACT(hour  FROM created_at)) AS _count
-      FROM tweets
-      WHERE created_at >= current_date at time zone 'UTC' - interval '${interval} hours'	
-    )
-    SELECT _count - LAG (_count) OVER (ORDER BY _hour ASC) AS _growth
-    FROM  cte`)
-      .then(result => {
-        return { ok: { data: Math.floor(result.rows[0].avg / 60) } }
-      })
-      .catch(err => {
-        return { err: { message: err } }
-      });
-    return res;
-  }
-
 }
