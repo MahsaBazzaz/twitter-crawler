@@ -42,6 +42,7 @@ export class UpdaterService {
 
     @Cron('31 * * * * *')
     async updateTweet() {
+        console.log("<><><><> updateTweet");
         if (this.tweetQueue.length > 0) {
             let tweet: ResponseSchema<TweetV2> = await this.twitterService.tweet(this.tweetQueue[this.tweetQueueIndex]);
             if (tweet.ok) {
@@ -64,7 +65,7 @@ export class UpdaterService {
 
     @Cron('1 * * * * *')
     async updateUser() {
-        // console.log("update time! ");
+        console.log("<><><><> updateUser");
         if (this.userQueue.length > 0) {
             // console.log("update() " + this.index + this.queue[this.index]);
             let index = this.userQueue.pop();
