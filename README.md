@@ -11,7 +11,7 @@ $ npm install
 ```
 
 ## Running the app
-to run the app:
+First follow the instruction of [backend installation](https://github.com/MahsaBazzaz/twitter-dashboard-api-gateway/blob/master/README.md), then to run the app:
 ```bash
 $ npm run start
 ```
